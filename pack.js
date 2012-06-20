@@ -90,6 +90,7 @@ $(document).ready(function() {
             var scale = this.height / 60; // scale to height 60px
             this.width /= scale;
             this.height /= scale;
+            this.onclick = function() {this.style.display="none"};
             var rect = new Rect(0, 0, this.width, this.height);
             node = start_node.insert_rect(rect);
             if(node) {
