@@ -75,10 +75,9 @@ var random_choice = function(n, m){
 };
 
 $(document).ready(function() {
-    var canvas = $('#bin')[0];
+    var logos = $('#bin');
     var start_node = new Node();
-    start_node.rect = new Rect(0, 0, canvas.width, canvas.height);
-    var ctx = canvas.getContext('2d');
+    start_node.rect = new Rect(0, 0, logos.width(), logos.height());
 
     var num_images = 371;
     var num_to_display = 40;
@@ -88,7 +87,7 @@ $(document).ready(function() {
     for(var i = 0 ; i < num_to_display ; i++) {
         images[i] = new Image();
         images[i].onload = function() {
-            var scale = this.height / 20; // scale to height 60px
+            var scale = this.height / 60; // scale to height 60px
             this.width /= scale;
             this.height /= scale;
             var rect = new Rect(0, 0, this.width, this.height);
@@ -96,10 +95,11 @@ $(document).ready(function() {
             if(node) {
                 var r = node.rect;
                 console.log('drawing ' + this.src + ' at (' + r.x + ',' + r.y + ')' + ' to (' + (r.x + this.width) + ',' + (r.y + this.height) + ')' );
-                ctx.drawImage(this, r.x, r.y, this.width, this.height);
+                this.style = 'left:' + r.x + '; top: ' + r.y;
+                logos.append(this);
             }
             else {
-                console.log(this.src + " didn't fit");
+                console.log(this.src + " didn't fit - " + this.width + ' by ' + this.height);
             }
         };
         images[i].src = 'images/' + images_to_display[i] + '.png';
