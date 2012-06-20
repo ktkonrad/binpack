@@ -65,7 +65,7 @@ Node.prototype.insert_rect = function(rect)
     return this.left.insert_rect(rect);
 }
 
-var random_choice = function(n, m){
+var random_choice = function(n, m) {
     // choose a random subset of n integer from [0, m)
     // not optimally efficient
     var arr = [];
@@ -74,11 +74,28 @@ var random_choice = function(n, m){
     return arr.slice(0,n);
 };
 
+var toggle_selected = function(im) {
+    var selected = $('#selected')[0];
+    var unselected = $('#unselected')[0];
+    
+    if (im.selected) {
+        console.log('unselecting ' + im);
+        selected.removeChild(im);
+        unselected.appendChild(im);
+        im.selected = false;
+    } else {
+        console.log('selecting ' + im);
+        unselected.removeChild(im);
+        selected.appendChild(im);
+        im.selected = true;
+    }
+}
+
 $(document).ready(function() {
-    var logos = $('#bin');
+    var logos = $('#unselected');
     var start_node = new Node();
     start_node.rect = new Rect(0, 0, logos.width(), logos.height());
-
+    
     var num_images = 371;
     var num_to_display = 40;
     var images_to_display = random_choice(num_to_display, num_images);
@@ -90,7 +107,8 @@ $(document).ready(function() {
             var scale = Math.sqrt(this.height*this.width / 10000); // normalize area
             this.width /= scale;
             this.height /= scale;
-            this.onclick = function() {this.style.display="none"};
+            this.selected = false;
+            this.onclick = function() {toggle_selected(this);};
             var rect = new Rect(0, 0, this.width, this.height);
             node = start_node.insert_rect(rect);
             if(node) {

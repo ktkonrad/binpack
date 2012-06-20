@@ -1,8 +1,28 @@
-#bin {
-    width: 800px;
+#logos {
+    width: 1200px;
     height: 800px;
 }
 
-img {
+#selected {
+    width: 200px;
+    height: 800px;
+    float: left;
+    border-right: solid black 2px;
+}
+
+#selected img {
+    position: static;
+}
+
+
+#unselected {
+    width: 800px;
+    height: 800px;
+    float: left;
+    position: relative;
+    
+}
+
+#unselected img {
     position: absolute;
 }
