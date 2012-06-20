@@ -87,7 +87,7 @@ $(document).ready(function() {
     for(var i = 0 ; i < num_to_display ; i++) {
         images[i] = new Image();
         images[i].onload = function() {
-            var scale = this.height / 60; // scale to height 60px
+            var scale = Math.sqrt(this.height*this.width / 10000); // normalize area
             this.width /= scale;
             this.height /= scale;
             this.onclick = function() {this.style.display="none"};
@@ -96,7 +96,8 @@ $(document).ready(function() {
             if(node) {
                 var r = node.rect;
                 console.log('drawing ' + this.src + ' at (' + r.x + ',' + r.y + ')' + ' to (' + (r.x + this.width) + ',' + (r.y + this.height) + ')' );
-                this.style = 'left:' + r.x + '; top: ' + r.y;
+                this.style.left = r.x;
+                this.style.top = r.y;
                 logos.append(this);
             }
             else {
