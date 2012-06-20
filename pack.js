@@ -65,50 +65,44 @@ Node.prototype.insert_rect = function(rect)
     return this.left.insert_rect(rect);
 }
 
-var random_color = function()
-{
-    var color = [0, 0, 0]
-    for(var i = 0; i <= 2; i++)
-    {
-        if(Math.random() < 0.66666)
-            color[i] = 32 + parseInt(Math.random() * 192);
-    }
-    return 'rgb('+color[0]+','+color[1]+','+color[2]+')';
-}
-
-var canvas = $('#bin')[0];
-var total_area = canvas.width * canvas.height;
-var filled_area = 0;
-var start_node = new Node();
-start_node.rect = new Rect(0, 0, canvas.width, canvas.height);
-
-g_max_rect_size = 25;
-
-var ctx = canvas.getContext('2d');
-
-var timeout_id = null;
-
-var percentfull_el = document.getElementById('percentfull');
-var pixelstogo_el = document.getElementById('pixelstogo');
-
-g_delay = 100;
-
-var iteration = function() {
-    var color = random_color();
-
-    var rect = new Rect(0, 0, // x/y don't matter here; it has no position yet
-        Math.min(Math.floor(1 + Math.random() * g_max_rect_size), g_max_rect_size),
-        Math.min(Math.floor(1 + Math.random() * g_max_rect_size), g_max_rect_size));
-
-    var node = start_node.insert_rect(rect);
-    if(node)
-    {
-        var r = node.rect;
-        ctx.fillStyle = random_color();
-        ctx.fillRect(r.x, r.y, r.w, r.h);
-        filled_area += r.w * r.h;
-    }
-    if(total_area - filled_area)
-        setTimeout(iteration, g_delay);
+var random_choice = function(n, m){
+    // choose a random subset of n integer from [0, m)
+    // not optimally efficient
+    var arr = [];
+    for(var i = 0; i < m; i++) arr.push(i);
+    for(var j, x, i = m; i; j = parseInt(Math.random() * i), x = arr[--i], arr[i] = arr[j], arr[j] = x);
+    return arr.slice(0,n);
 };
-setTimeout(iteration, 0);
+
+$(document).ready(function() {
+    var canvas = $('#bin')[0];
+    var start_node = new Node();
+    start_node.rect = new Rect(0, 0, canvas.width, canvas.height);
+    var ctx = canvas.getContext('2d');
+
+    var num_images = 371;
+    var num_to_display = 40;
+    var images_to_display = random_choice(num_to_display, num_images);
+    var images = [];
+
+    for(var i = 0 ; i < num_to_display ; i++) {
+        images[i] = new Image();
+        images[i].onload = function() {
+            var scale = this.height / 20; // scale to height 60px
+            this.width /= scale;
+            this.height /= scale;
+            var rect = new Rect(0, 0, this.width, this.height);
+            node = start_node.insert_rect(rect);
+            if(node) {
+                var r = node.rect;
+                console.log('drawing ' + this.src + ' at (' + r.x + ',' + r.y + ')' + ' to (' + (r.x + this.width) + ',' + (r.y + this.height) + ')' );
+                ctx.drawImage(this, r.x, r.y, this.width, this.height);
+            }
+            else {
+                console.log(this.src + " didn't fit");
+            }
+        };
+        images[i].src = 'images/' + images_to_display[i] + '.png';
+        console.log(images[i].src);
+    }
+});
