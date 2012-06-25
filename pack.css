@@ -3,6 +3,19 @@
     height: 800px;
 }
 
+.logo {
+    border: solid black 1px;
+    margin: -1px;
+}
+
+#unselected > .logo {
+    position: absolute;
+}
+
+#selected > .logo {
+    position: static;
+}
+
 #selected {
     width: 200px;
     height: 800px;
@@ -19,10 +32,13 @@
     width: 800px;
     height: 800px;
     float: left;
-    position: relative;
-    
+    position: relative;    
 }
 
-#unselected img {
+#overlay {
+    background: transparent;
     position: absolute;
+    z-index: 10;
+    height: 100%;
+    width: 100%;
 }
