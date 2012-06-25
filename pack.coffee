@@ -12,6 +12,7 @@ class Node
     @div.css('top', y)
     @div.width(w)
     @div.height(h)
+    $('#unselected').append @div
 
   x: =>
     parseInt(@div.css('left'))
@@ -96,7 +97,6 @@ draw_one = (root) ->
     node = root.insert_img(this)
     if node
       console.log "drawing #{@src} at (#{node.x()},#{node.y()}) to (#{node.x()+node.w()}, #{node.y()+node.h()})"
-      unselected.append node.div
     else
       console.log @src + " didn't fit - " + @width + " by " + @height
 
