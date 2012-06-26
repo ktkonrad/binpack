@@ -8,13 +8,14 @@ class Node
     # create a div and put it in the dom
     @div = $(document.createElement('div'))
     @div[0].selected = false
+    @div[0].node = this
     @div.addClass('logo')
     @div[0].onclick = ->
       toggle_selected this
-    @div.css('left', x)
-    @div.css('top', y)
-    @div.width(w)
-    @div.height(h)
+    @x(x)
+    @y(y)
+    @w(w)
+    @h(h)
     $('#unselected').append @div
 
   # getter/setters for position and size
@@ -78,68 +79,103 @@ class Node
     @show_connections()
     @left.insert_img img
 
-  move_left: (d) =>
+  move_left: (d, r) =>
     # move this node and all its descendants left by d
-    @x(@x()-d)
-    @left?.move_left(d)
-    @right?.move_left(d)    
+    # if an element is touching the right boundary r, keep it anchored there and extend it left
+    if @x() + @w() is r
+      @w(@w() + d)
+    @x(@x() - d)
+    @left?.move_left(d, r)
+    @right?.move_left(d, r)    
 
-  move_up: (d) =>
-    # move this node and all its descendants left by d
-    @y(@y()-d)
-    @left?.move_up(d)
-    @right?.move_up(d)    
+  move_up: (d, b) =>
+    # move this node and all its descendants up by d
+    # if an element is touching the bottom boundary b, keep it anchored there and extend it up
+    if @y() + @h() is b
+      @h(@h() + d)
+    @y(@y() - d)
+    @left?.move_up(d, b)
+    @right?.move_up(d, b)    
 
-  replace: (node) =>
-    # replace this with node
-    # don't move children
-    node.parent = @parent
+  extend_right: (d, r) =>
+    # extend this node and all its descendants to the right by d
+    # only extend a node if its right boundary is at r
+    if @x() + @w() is r
+      @w(@w() + d)
+      @left?.extend_right(d, r)
+      @right?.extend_right(d, r)
+
+  extend_down: (d, b) =>
+    # extend this node and all its descendants to the down by d
+    # only extend a node if its bottom boundary is at b
+    if @y() + @h() is b
+      @h(@h() + d)
+      @left?.extend_down(d, b)
+      @right?.extend_down(d, b)
+
+  consume_children: =>
+    # consume own children and get consumed by parent if both this and sibling are empty
+    @left?.div.remove()
+    @right?.div.remove()
+    @left = null
+    @right = null
     if this is @parent?.left
-      @parent.left = node
-    else
-      @parent?.right = node
-    node.left = @left
-    @left?.parent = node
-    node.right = @right
-    @right?.parent = node
-    # move subtrees
-    if @vertical_split
-      @left?.move_left(@w())
-    else
-      @left?.move_up(@h())
-
-  graft: (node) =>
-    # replace this with subtree anchored at node
-    node.parent = @parent
-    if this is @parent?.left
-      @parent.left = node
-    else
-      @parent?.right = node
-    # move subtrees
-    if @vertical_split
-      @left?.move_left(@w())
-    else
-      @left?.move_up(@h())
-    
+      sibling = @parent.right
+      unless sibling.filled or sibling.left or sibling.right # if unfilled and no children
+        @remove()
+        
 
   remove: =>
-    if @left.filled
-      if @right.filled
-        # TODO this case sucks
-      else
-        left = @left.remove() # remove left child and save it for later
-        @remove().insert(left) # now remove this (without left child) and insert the old left child back into the tree
-    else
-      left = @left.remove() # left child is unfilled so it must be a leaf
-      if @right.filled
-        @graft(@right) # graft right child to here
-      else 
-        # become unfilled and consume both children
-        @filled = false
-        @w(if @vertical_split then @left.w()+@right.w() else @right.w())
-        @h(if @vertical_split @right.h() else @left.h()+@right.h())
-        @left = null
-        @right = null
+    window_width = 800  # TODO:
+    window_height = 800 # make these globals
+    #return this unless @filled # not allowed to remove unfilled nodes
+    if @parent
+      if this is @parent.left
+        sibling = @parent.right
+        if @parent.vertical_split
+          if sibling.filled # right sibling is filled
+            # move filled sibling left by @w() and make it parent's left child
+            # give parent a new right child with the space opened up by the move
+            sibling.x(sibling.x() - @w())
+            @parent.left = sibling
+            @parent.right = new Node(@parent, @parent.x() + @parent.w() - @w(), @y(), @w(), @h())
+          else # right sibling is unfilled
+            # move sibling's subtree left by @w()
+            sibling.move_left(@w(), @x()+@parent.w())
+            # sibling now has same location and size as parent
+            # have parent consume both children
+            @parent.consume_children()
+        else # horizontal split
+          if sibling.filled # bottom sibling is filled
+            # move filled sibling up by @h() and make it parent's left child
+            # give parent a new right child with the space opened up by the move
+            sibling.y(sibling.y() - @h())
+            @parent.left = sibling
+            @parent.right = new Node(@parent, @x(), @parent.y() + @parent.h() - @h(), @w(), @h())
+          else # bottom sibling is unfilled
+            # move sibling's subtree up by @h()
+            sibling.move_up(@h(), @y()+@parent.h())
+            # sibling now has same location and size as parent
+            # have parent consume both children
+            @parent.consume_children()
+      else # this is the right child
+        sibling = @parent.left
+        if sibling.filled # left sibling is filled
+          # leave this right where it is and unfill it
+          @filled = false
+        else # left sibling is unfilled (it cannot be a leaf)
+          if @parent.vertical_split # left sibling is unfilled nonleaf
+            # extend sibling's subtree to the right by @w()
+            sibling.extend_right(@w(), @x())
+          else # top sibling is unfilled nonleaf
+            # extend sibling's subtree down by @h()
+            sibling.extend_down(@h(), @y())
+        # make sure the parent's new children know who their parent is      
+      @parent.left?.parent = @parent
+      @parent.right?.parent = @parent
+    else # this has no parent (so it is the root node and it is exactly filled)
+      @filled = false # leave this right where it is and unfill it
+    @div.remove() # remove div from dom
     this # return self
         
   insert: (node) =>
@@ -195,22 +231,24 @@ Object::same_size_as = (div) ->
   div.width() is @width and div.height() is @height
 
 toggle_selected = (div) ->
+  return unless div.node.filled
   console.log 'toggle'
   $selected = $("#selected")
   $unselected = $("#unselected")
   $div = $(div)
   if div.selected
     $div.remove()
-    $unselected.append $div
     div.selected = false
+    root.node.insert_img $div.children()[0]
   else
-    $div.remove()
-    $selected.append $div
+    div.node.remove()
     div.selected = true
+    $selected.append(div)
 
 $(document).ready ->
   $unselected = $("#unselected")
   root = new Node(null, 0, 0, 800, 800)
+  root.div[0].id = "root"
   $(document).keypress((e) ->
     switch e.which
       when 'h'.charCodeAt(0) then $('#overlay').toggle()
