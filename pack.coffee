@@ -81,19 +81,46 @@ class Node
 
   move_left: (d, r) =>
     # move this node and all its descendants left by d
-    # if an element is touching the right boundary r, keep it anchored there and extend it left
-    if @x() + @w() is r
-      @w(@w() + d)
+    # PRECONDITION: this is a right child
     @x(@x() - d)
+    if @x() + @w() + d is r # touching right boundary
+      if @filled
+        ### replace this with:
+            A
+           / \
+         this B
+        where this is moved left and B is the space opened by the move 
+        ###
+        @parent.right = new Node(@parent, @x(), @y(), @w() + d, @h()) # create A
+        @parent.right.left = this # make this A's left child
+        @parent.right.right = new Node(@parent.right, @x() + @w(), @y(), d, @h()) # create B
+        @parent = @parent.right # make A this's new parent
+      else # unfilled
+        @w(@w() + d) # keep it anchored to right boundary
+    # move descendants
     @left?.move_left(d, r)
-    @right?.move_left(d, r)    
+    @right?.move_left(d, r) 
 
   move_up: (d, b) =>
     # move this node and all its descendants up by d
     # if an element is touching the bottom boundary b, keep it anchored there and extend it up
-    if @y() + @h() is b
-      @h(@h() + d)
+    # PRECONDITION: this is a right child
     @y(@y() - d)
+    if @y() + @h() + d is b # touching bottom boundary
+      if @filled
+        ### replace this with:
+            A
+           / \
+         this B
+        where this is moved up and B is the space opened by the move 
+        ###
+        @parent.right = new Node(@parent, @x(), @y(), @w(), @h() + d) # create A
+        @parent.right.left = this # make this A's left child
+        @parent.right.right = new Node(@parent.right, @x(), @y() + @h(), @w(), d) # create B
+        @parent = @parent.right # make A this's new parent
+      else # unfilled
+        @h(@h() + d) # keep it anchored to the bottom boundary
+    # move descendants
     @left?.move_up(d, b)
     @right?.move_up(d, b)    
 
@@ -115,17 +142,21 @@ class Node
 
   consume_children: =>
     # consume own children and get consumed by parent if both this and sibling are empty
-    @left?.div.remove()
-    @right?.div.remove()
-    @left = null
-    @right = null
-    if this is @parent?.left
-      sibling = @parent.right
-      unless sibling.filled or sibling.left or sibling.right # if unfilled and no children
-        @remove()
-        
+    # PRECONDITION: left child is unfilled with no children
+    @left.div.remove()
+    @right.div.remove()
+    if @right.left # adopt any grandchildren
+      @left = @right.left
+      @left.parent = this
+      @right = @right.right
+      @right.parent = this
+    else # delete references to consumed children
+      @left = null
+      @right = null
+    @remove() if @parent and this is @parent.left and not @filled and not @left and not @right # remove if this is an unfilled left child with no children
 
   remove: =>
+    # remove a node from the tree
     window_width = 800  # TODO:
     window_height = 800 # make these globals
     #return this unless @filled # not allowed to remove unfilled nodes
